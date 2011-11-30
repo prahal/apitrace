@@ -27,6 +27,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "trace_file.hpp"
 #include "trace_parser.hpp"
@@ -329,7 +330,12 @@ BitmaskSig *Parser::parse_bitmask_sig() {
 void Parser::parse_enter(Mode mode) {
     FunctionSig *sig = parse_function_sig();
 
-    Call *call = new Call(sig);
+    CallFlags flags;
+    memset(&flags, 0, sizeof flags);
+    flags.trace = 1;
+    flags.retrace = 1;
+
+    Call *call = new Call(sig, flags);
 
     call->no = next_call_no++;
 

@@ -339,6 +339,55 @@ inline std::ostream & operator <<(std::ostream &os, Value *value) {
 }
 
 
+struct CallFlags
+{
+    /**
+     * Whether a call was really done by the application or not.
+     *
+     * Unset for fake calls, calls not truly done by the application but
+     * emitted and recorded for completeness -- to provide contextual
+     * information necessary for retracing, that would not be available through
+     * other ways.
+     *
+     * NOTE: At least one of `trace` or `retrace` should be set.
+     */
+    unsigned trace:1;
+
+    /**
+     * Whether this call should be retraced or ignored.
+     *
+     * Unset for calls which can't be safely replayed (due to incomplete
+     * information) or that have no sideffects.
+     */
+    unsigned retrace:1;
+
+    /**
+     * Whether this call renders into the bound framebuffers.
+     *
+     * 
+     *
+     * XXX: 
+     */
+    unsigned render:1;
+
+    /**
+     * Whether this call causes framebuffers to be swapped.
+     *
+     * This does not mark frame termination by itself -- that's solely the
+     * responsibility of `endOfFrame` bit. 
+     *
+     * This mean that snapshots should be take prior to the call, and not
+     * after.
+     */
+    unsigned swapBuffers:1;
+    
+    /**
+     * Whether this call terminates a frame.
+     */
+    unsigned endOfFrame:1;
+};
+
+
 class Call
 {
 public:
@@ -347,7 +396,15 @@ public:
     std::vector<Value *> args;
     Value *ret;
 
-    Call(FunctionSig *_sig) : sig(_sig), args(_sig->num_args), ret(0) { }
+    CallFlags flags;
+
+    Call(FunctionSig *_sig, const CallFlags &_flags) :
+        sig(_sig), 
+        args(_sig->num_args), 
+        ret(0),
+        flags(_flags) {
+    }
+
     ~Call();
 
     inline const char * name(void) const {
